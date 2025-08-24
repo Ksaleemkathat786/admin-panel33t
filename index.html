@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel</title>
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css"/>
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+  <!-- Login Page -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <h2>Admin Login</h2>
+      <input type="email" id="email" placeholder="Email" required/>
+      <div class="password-wrapper">
+        <input type="password" id="password" placeholder="Password" required/>
+        <span class="toggle-password" id="togglePassword">
+          <i class="fas fa-eye"></i>
+        </span>
+      </div>
+      <button id="loginBtn">Login</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+  </div>
+
+  <!-- Main Admin Dashboard -->
+  <div class="admin-container" id="dashboard" style="display:none;">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="scroll-line" id="scrollLine"></div>
+      <nav class="nav-sections">
+        <!-- Tournament Section -->
+        <div class="nav-group">
+          <div class="group-title"><i class="fas fa-trophy"></i> Tournament</div>
+          <ul>
+            <li><a href="#" data-page="Tournament/create.html"><i class="fas fa-plus-circle"></i> Create Tournament</a></li>
+            <li><a href="#" data-page="Tournament/edit.html"><i class="fas fa-edit"></i> Edit/Delete Tournament</a></li>
+            <li><a href="#" data-page="Tournament/joined.html"><i class="fas fa-users"></i> View Joined Users</a></li>
+            <li><a href="#" data-page="Tournament/winners.html"><i class="fas fa-medal"></i> Declare Winners</a></li>
+            <li><a href="#" data-page="Tournament/room.html"><i class="fas fa-key"></i> Send Room ID & Password</a></li>
+          </ul>
+        </div>
+
+        <!-- User Management -->
+        <div class="nav-group">
+          <div class="group-title"><i class="fas fa-users"></i> User Management</div>
+          <ul>
+            <li><a href="#" data-page="Users/search.html"><i class="fas fa-search"></i> Search Users</a></li>
+          </ul>
+        </div>
+
+        <!-- Wallet Section -->
+        <div class="nav-group">
+          <div class="group-title"><i class="fas fa-wallet"></i> Wallet & Payment</div>
+          <ul>
+            <li><a href="#" data-page="Wallet/refer.html"><i class="fas fa-arrow-down"></i> Refer Requests</a></li>
+            <li><a href="#" data-page="Wallet/withdraw.html"><i class="fas fa-arrow-up"></i> Withdraw Requests</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+      <button id="toggleSidebar" class="toggle-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1>Loading...</h1>
+    </main>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Fixed credentials
+    const ADMIN_EMAIL = "gouangs305@gmail.com";
+    const BASE_PASSWORD = "Gourang26276";
+
+    const loginOverlay = document.getElementById("loginOverlay");
+    const dashboard = document.getElementById("dashboard");
+    const errorMsg = document.getElementById("errorMsg");
+
+    function getDynamicPassword() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      return BASE_PASSWORD + hours + minutes;
+    }
+
+    // Login Function
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (email === ADMIN_EMAIL && password === getDynamicPassword()) {
+        loginOverlay.style.display = "none";
+        dashboard.style.display = "flex";
+        loadPage("Tournament/create.html");
+      } else {
+        errorMsg.textContent = "❌ Invalid email or password";
+      }
+    });
+
+    // Password toggle
+    const togglePassword = document.getElementById("togglePassword");
+    const passwordInput = document.getElementById("password");
+    togglePassword.addEventListener("click", () => {
+      const type = passwordInput.getAttribute("type") === "password" ? "text" : "password";
+      passwordInput.setAttribute("type", type);
+      togglePassword.innerHTML = type === "password"
+        ? '<i class="fas fa-eye"></i>'
+        : '<i class="fas fa-eye-slash"></i>';
+    });
+
+    // Sidebar scroll line
+    const sidebar = document.getElementById("sidebar");
+    const scrollLine = document.getElementById("scrollLine");
+    sidebar.addEventListener("scroll", () => {
+      const scrollTop = sidebar.scrollTop;
+      const scrollHeight = sidebar.scrollHeight - sidebar.clientHeight;
+      const percent = (scrollTop / scrollHeight) * 100;
+      scrollLine.style.height = percent + "%";
+    });
+
+    // Sidebar toggle
+    document.getElementById("toggleSidebar").addEventListener("click", () => {
+      sidebar.classList.toggle("collapsed");
+    });
+
+    // Load content pages
+    const mainContent = document.getElementById("mainContent");
+
+    function executeScriptsFromHTML(html) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+
+      const scripts = tempDiv.querySelectorAll('script');
+      scripts.forEach(script => script.remove());
+
+      mainContent.innerHTML = tempDiv.innerHTML;
+
+      scripts.forEach(script => {
+        const newScript = document.createElement('script');
+        if (script.type) newScript.type = script.type;
+        if (script.src) newScript.src = script.src;
+        else newScript.textContent = script.textContent;
+        document.body.appendChild(newScript);
+      });
+    }
+
+    function loadPage(page) {
+      fetch(page)
+        .then(response => {
+          if (!response.ok) throw new Error("Page not found");
+          return response.text();
+        })
+        .then(html => { executeScriptsFromHTML(html); })
+        .catch(err => {
+          mainContent.innerHTML = "<h2>Page not found</h2>";
+          console.error("❌ Error loading page:", err);
+        });
+    }
+
+    // Navigation links
+    document.querySelectorAll('a[data-page]').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const page = link.getAttribute('data-page');
+        loadPage(page);
+      });
+    });
+  </script>
+</body>
+</html>
